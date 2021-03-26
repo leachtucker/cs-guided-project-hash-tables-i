@@ -31,10 +31,13 @@ class LinkedListNode:
         self.next = None
 
 class MyHashTable:
-    def __init__(self, capacity):
+    def __init__(self, capacity=8):
         self.capacity = capacity
         self.storage = [None] * self.capacity
         self.size = 0
+
+    def get_load_factor(self):
+        return self.size / self.capacity
 
     def hash(self, key):
         # DJB2 HASH
@@ -56,30 +59,52 @@ class MyHashTable:
     # put updates a value if it exists or
     def put(self, key, value):
         index = self.hash_index(key)
+        new_node = LinkedListNode(key, value)
 
         if self.storage[index] is None:
-            self.storage[index] = LinkedListNode(key, value)
-
+            self.storage[index] = new_node
             self.size += 1
         else:
-            head = self.storage[index]
+            current_head = self.storage[index]
 
-            currNode = head
-            tail = None
+            currNode = current_head
             while currNode is not None:
-                tail = currNode
-
                 if currNode.key == key:
+                    # If we find an existing node with the given key, update that node's value
                     currNode.value = value
                     break
 
-                # Move currNode forward for the next step of the iteration
                 currNode = currNode.next
             else:
-                # if we get to the end of this loop without finding a node with that key, let's create one at the tail
-                tail.next = LinkedListNode(key, value)
+                # if we go through this loop without breaking (we didn't find a node with that key), let's make the new_node the new head
+                new_node.next = current_head
+                self.storage[index] = new_node
 
                 self.size += 1
+
+        # After inserting a new node, we need to check if our load factor has hit the threshold of 0.7...if so, resize the storage
+        if self.get_load_factor() >= 0.7:
+            self.resize()
+
+    def resize(self):
+        current_storage = self.storage
+
+        # Update
+        self.capacity *= 2
+        self.storage = [None] * self.capacity
+        self.size = 0
+
+        for bucket in current_storage:
+            if bucket is None:
+                continue
+
+            head = bucket
+
+            currNode = head
+            while currNode is not None:
+                self.put(currNode.key, currNode.value)
+
+                currNode = currNode.next
 
     # Returns the value associated with a key
     def get(self, key):
@@ -123,7 +148,6 @@ class MyHashTable:
                 else:
                     prevNode.next = prevNode.next.next
 
-
                 self.size -= 1
                 break
 
@@ -131,20 +155,7 @@ class MyHashTable:
             prevNode = currNode
             currNode = currNode.next
 
-
-# ```plaintext
-# hash_table = MyHashTable();
-# hash_table.put("a", 1);
-# hash_table.put("b", 2);
-# hash_table.get("a");            // returns 1
-# hash_table.get("c");            // returns -1 (not found)
-# hash_table.put("b", 1);         // update the existing value
-# hash_table.get("b");            // returns 1
-# hash_table.remove("b");         // remove the mapping for 2
-# hash_table.get("b");            // returns -1 (not found)
-# ```
-
-myTable = MyHashTable(36)
+myTable = MyHashTable(8)
 myTable.put('a', '1')
 myTable.put('b', '2')
 
@@ -160,5 +171,26 @@ print(myTable.get('b'))
 myTable.remove('b')
 
 print(myTable.get('b'))
+
+print(f'Size: {myTable.size}')
+
+print('\n')
+
+
+myTable.put('apple', '4')
+print(f'Load factor: {myTable.get_load_factor()}')
+
+myTable.put('peach', '7')
+print(f'Load factor: {myTable.get_load_factor()}')
+
+myTable.put('banana', '9')
+print(f'Load factor: {myTable.get_load_factor()}')
+
+myTable.put('cucumber', '11')
+print(f'Load factor: {myTable.get_load_factor()}')
+
+myTable.put('watermelon', '14')
+print(f'Load factor: {myTable.get_load_factor()}')
+
 
 print(f'Size: {myTable.size}')
